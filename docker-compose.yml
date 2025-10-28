@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  indextts2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: indextts2:latest
+    container_name: indextts2-container
+    restart: unless-stopped
+    
+    # GPU支持
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    
+    # 端口映射
+    ports:
+      - "7860:7860"  # WebUI端口
+    
+    # 卷挂载（用于持久化数据）
+    volumes:
+      - ./checkpoints:/app/checkpoints:ro  # 模型权重（只读）
+      - ./saved_timbres:/app/saved_timbres  # 用户音色
+      - ./outputs:/app/outputs  # 输出文件
+      - ./examples:/app/examples:ro  # 示例文件（只读）
+    
+    # 环境变量
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=all
+      - HF_ENDPOINT=https://hf-mirror.com  # 中国镜像（可选）
+      - UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple  # 清华镜像
+      - UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+      - HF_HOME=/app/.cache/huggingface  # 缓存目录
+    
+    # 网络模式
+    network_mode: bridge
+    
+    # 安全选项
+    security_opt:
+      - seccomp:unconfined
+    
+    # 保持容器运行
+    tty: true
+    stdin_open: true
+    
+    # 健康检查
+    healthcheck:
+      test: ["CMD", "python", "-c", "import torch; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # 命令覆盖（默认启动WebUI）
+    command: ["bash", "-c", "echo 'Starting IndexTTS2 WebUI...' && uv run webui.py --server-name 0.0.0.0 --server-port 7860"]
+
+  # 开发模式服务（可选）
+  indextts2-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: indextts2:dev
+    container_name: indextts2-dev-container
+    restart: unless-stopped
+    
+    ports:
+      - "7860:7860"
+      - "2222:22"  # SSH端口（如果需要）
+    
+    volumes:
+      - .:/app  # 开发模式挂载整个项目
+      - ./checkpoints:/app/checkpoints:ro
+      - ./saved_timbres:/app/saved_timbres
+      - ./outputs:/app/outputs
+    
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=all
+      - HF_ENDPOINT=https://hf-mirror.com
+      - UV_DEFAULT_INDEX=https://pypi.tuna.tsinghua.edu.cn/simple
+      - UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+      - HF_HOME=/app/.cache/huggingface
+    
+    network_mode: bridge
+    security_opt:
+      - seccomp:unconfined
+    
+    tty: true
+    stdin_open: true
+    
+    # 开发模式直接进入bash
+    command: ["bash"]
+    
+    # 仅在开发模式时启用
+    profiles:
+      - dev
+
+networks:
+  default:
+    name: indextts2-network
