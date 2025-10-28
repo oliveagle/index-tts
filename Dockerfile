@@ -1,73 +1,10 @@
 # 使用官方PyTorch基础镜像，集成CUDA支持
-FROM pytorch/pytorch:2.9.0-cuda12.8-cudnn9-runtime
+FROM harbor1.suanleme.cn/oliveagle/indextts2:20251028
 
-# 设置环境变量
-ENV DEBIAN_FRONTEND=noninteractive
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV CUDA_VISIBLE_DEVICES=all
-
-# 创建pip配置文件目录
-RUN mkdir -p /root/.config/pip
-
-# 配置pip使用清华大学镜像源
-COPY <<EOF /root/.config/pip/pip.conf
-[global]
-index-url = https://pypi.tuna.tsinghua.edu.cn/simple
-[install]
-trusted-host = https://pypi.tuna.tsinghua.edu.cn
-EOF
-
-# 设置工作目录
-WORKDIR /app
-
-# 安装系统依赖
-RUN apt-get update && apt-get install -y \
-    # 基础工具
-    git \
-    git-lfs \
-    wget \
-    curl \
-    unzip \
-    # 音频处理工具
-    ffmpeg \
-    # 构建工具
-    build-essential \
-    # Python开发包
-    python3-dev \
-    # 清理apt缓存
-    && rm -rf /var/lib/apt/lists/*
-
-# 安装uv包管理器并配置清华大学镜像源
-RUN pip install -U uv
-
-# 配置uv使用清华大学镜像源
-ENV UV_DEFAULT_INDEX="https://pypi.tuna.tsinghua.edu.cn/simple"
-ENV UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
-
-# 复制pyproject.toml和uv配置文件（如果存在）
-COPY pyproject.toml ./
-
-# 复制整个项目到容器
-COPY . .
-
-# # 使用uv同步所有依赖（包括可选依赖）
-# RUN uv sync --all-extras
-
-RUN uv pip install -r requirements.txt
-
-# 安装项目为可编辑模式
-RUN uv pip install -e .
-
-# 下载模型权重（可选）
-# 这里可以添加下载模型命令，但考虑到网络和权限问题，通常在运行时下载
-# RUN uv tool install "huggingface-hub[cli,hf_xet]" && \
-#     hf download IndexTeam/IndexTTS-2 --local-dir=checkpoints
-
-# 创建必要的目录
-RUN mkdir -p checkpoints saved_timbres outputs
+# COPY uv.lock uv.lock
 
 # 设置默认的环境变量
+ENV PATH=/opt/conda/bin:$PATH
 ENV PYTHONPATH=/app:$PYTHONPATH
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
@@ -81,5 +18,15 @@ HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
                    import torchaudio; print('torchaudio:', torchaudio.__version__); \
                    print('CUDA available:', torch.cuda.is_available())" || exit 1
 
-# 默认命令：启动WebUI
-CMD ["bash", "-c", "echo 'IndexTTS2 Docker container ready!' && echo 'Available commands:' && echo '- uv run webui.py  (启动Web界面)' && echo '- uv run indextts/infer_v2.py  (运行推理脚本)' && echo '- bash  (进入容器)' && exec bash"]
+WORKDIR /app
+
+# --- 默认进入 bash
+CMD ["bash"]
+ENTRYPOINT []
+
+
+# --- 默认直接启动 webui_modifed.py
+# CMD []
+# ENTRYPOINT ["/app/.venv/bin/python", "webui_modifed.py"]
+
+

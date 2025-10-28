@@ -31,6 +31,7 @@ MANIFEST
 .vscode/
 *.swp
 *.swo
+.venv
 
 # Jupyter Notebook
 .ipynb_checkpoints
@@ -68,8 +69,8 @@ Thumbs.db
 checkpoints/  # 模型权重会单独下载
 saved_timbres/  # 用户保存的音色文件
 outputs/  # 输出目录
-*.wav  # 音频文件示例（太大）
-*.mp3  # 音频文件示例（太大）
+; *.wav  # 音频文件示例（太大）
+; *.mp3  # 音频文件示例（太大）
 *.mp4  # 视频文件
 *.png  # 大图片文件
 *.jpg  # 大图片文件
@@ -86,3 +87,4 @@ tools/  # 工具文件可以单独管理
 archive/  # 旧版本文档
 
 scripts
+.venv
