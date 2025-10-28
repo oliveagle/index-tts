@@ -48,11 +48,13 @@ ENV UV_INDEX_URL="https://pypi.tuna.tsinghua.edu.cn/simple"
 # 复制pyproject.toml和uv配置文件（如果存在）
 COPY pyproject.toml ./
 
-# 使用uv同步所有依赖（包括可选依赖）
-RUN uv sync --all-extras
-
 # 复制整个项目到容器
 COPY . .
+
+# # 使用uv同步所有依赖（包括可选依赖）
+# RUN uv sync --all-extras
+
+RUN uv pip install -r requirements.txt
 
 # 安装项目为可编辑模式
 RUN uv pip install -e .
@@ -64,13 +66,6 @@ RUN uv pip install -e .
 
 # 创建必要的目录
 RUN mkdir -p checkpoints saved_timbres outputs
-
-# 设置git配置（因为需要git lfs）
-RUN git config --global user.name "index-tts" && \
-    git config --global user.email "index-tts@docker"
-
-# 初始化git lfs
-RUN git lfs install
 
 # 设置默认的环境变量
 ENV PYTHONPATH=/app:$PYTHONPATH
